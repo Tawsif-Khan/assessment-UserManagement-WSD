@@ -1,4 +1,12 @@
+<?php
 
+$user = $userController->getUserInfoById($_GET['id']);
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['updateUser'])) {
+
+  $userAdd = $userController->updateUserByIdInfo($_GET['id'],$_POST);
+}
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,21 +22,23 @@
         <form action="" method="POST">
             <div class="form-group">
                 <label for="name">Name</label>
-                <input type="text" id="name" name="username" class="form-control" required>
+                <input type="text" id="name" name="username" class="form-control" value="<?php echo $user->username;?>"  required>
             </div>
             <div class="form-group">
                 <label for="email">Email</label>                                    
-                <input type="email" id="email" name="email" class="form-control" required>
+                <input type="email" id="email" name="email" class="form-control" value="<?php echo $user->email;?>" required>
             </div>
             <div class="form-group">
                 <label for="password">Password</label>                                    
                 <input type="password" id="password" name="password" class="form-control" >
-                <input type="hidden" id="old_password" name="old_password" class="form-control"  required>
-                <input type="hidden" id="userId" name="userId" class="form-control"  required>
+                <input type="hidden" id="old_password" name="old_password" class="form-control" value="<?php echo $user->password;?>" required>
+                <input type="hidden" id="userId" name="userId" class="form-control"  value="<?php echo $user->id;?>" required>
             </div>
             <div class="form-group">
                 <label for="role">Role</label>
                 <select id="role" name="role" class="form-control">
+                    <option value="admin" <?php echo $user->role == 'admin'? 'selected':'';?>>Admin</option>
+                    <option value="user" <?php echo $user->role == 'user'? 'selected':'';?>>User</option>
                 </select>
             </div>
             <button type="submit" name="updateUser" class="btn btn-primary">Save Changes</button>
