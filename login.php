@@ -1,3 +1,38 @@
+<?php
+$filepath = realpath(dirname(__FILE__));
+include_once $filepath."/lib/Session.php";
+Session::init();
+spl_autoload_register(function($classes){
+
+  include 'src/'.$classes.".php";
+
+});
+
+
+$auth = new AuthController();
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
+    
+  $response = $auth->login($_POST);
+  if (isset($response)) {
+  echo $response;
+}
+}
+
+
+$logout = Session::get('logout');
+if (isset($logout)) {
+  echo $logout;
+}
+Session::CheckLogin();
+
+
+
+
+
+
+ ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,16 +51,16 @@
                         <h4>Login</h4>
                     </div>
                     <div class="card-body">
-                        <form action="#" method="POST">
+                        <form action="" method="POST">
                             <div class="form-group">
                                 <label for="username">Username</label>
-                                <input type="text" id="username" name="username" class="form-control" placeholder="Enter your username" required>
+                                <input type="text" id="username" name="email" class="form-control" placeholder="Enter your username" required>
                             </div>
                             <div class="form-group">
                                 <label for="password">Password</label>
                                 <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required>
                             </div>
-                            <button type="submit" class="btn btn-primary btn-block">Login</button>
+                            <button type="submit" class="btn btn-primary btn-block" name="login">Login</button>
                         </form>
                     </div>
                 </div>

@@ -3,196 +3,206 @@
 include './lib/Database.php';
 include_once './lib/Session.php';
 
+class UserController
+{
 
-class UserController{
+    //  Property
+    private $db;
+    private $validate;
 
-  // Db Property
-  private $db;
-
-  // Db __construct Method
-  public function __construct(){
-    $this->db = new Database();
-  }
-
-
-  // Check Exist Email Address Method
-  public function checkExistEmail($email){
-    $sql = "SELECT email from  users WHERE email = ?";
-    $stmt = $this->db->pdo->prepare($sql);
-    $stmt->execute([$email]);
-    if ($stmt->rowCount()> 0) {
-      return true;
-    }else{
-      return false;
-    }
-  }
-
-  
-
-
-  // User Registration Method
-  public function userRegistration($data){
-    $username = $data['username'];
-    $email = $data['email'];
-    $role = $data['role'];
-    $password = $data['password'];
-
-    $checkEmail = $this->checkExistEmail($email);
-
-    if ($username == "" || $email == "" || $password == "" || $role == "") {
-      $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
-<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-<strong>Error !</strong> Please, User Registration field must not be Empty !</div>';
-        return $msg;
-    }elseif (strlen($username) < 3) {
-      $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
-<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-<strong>Error !</strong> Username is too short, at least 3 Characters !</div>';
-        return $msg;
-    }elseif(strlen($password) < 5) {
-      $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
-<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-<strong>Error !</strong> Password at least 6 Characters !</div>';
-        return $msg;
-    }elseif(!preg_match("#[0-9]+#",$password)) {
-      $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
-<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-<strong>Error !</strong> Your Password Must Contain At Least 1 Number !</div>';
-        return $msg;
-    }elseif(!preg_match("#[a-z]+#",$password)) {
-      $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
-<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-<strong>Error !</strong> Your Password Must Contain At Least 1 Number !</div>';
-        return $msg;
-    }elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-      $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
-<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-<strong>Error !</strong> Invalid email address !</div>';
-        return $msg;
-    }elseif ($checkEmail == TRUE) {
-      $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
-<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-<strong>Error !</strong> Email already Exists, please try another Email... !</div>';
-        return $msg;
-    }else{
-
-      $sql = "INSERT INTO users( username, email, password, role) VALUES(:username, :email, :password, :role)";
-      $stmt = $this->db->pdo->prepare($sql);
-      $stmt->bindValue(':username', $username);
-      $stmt->bindValue(':email', $email);
-      $stmt->bindValue(':password', $this->hashPassword($password));
-      $stmt->bindValue(':role', $role);
-      $result = $stmt->execute();
-      if ($result) {
-        $msg = '<div class="alert alert-success alert-dismissible mt-3" id="flash-msg">
-  <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-  <strong>Success !</strong> Wow, you have Registered Successfully !</div>';
-          return $msg;
-      }else{
-        $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
-  <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-  <strong>Error !</strong> Something went Wrong !</div>';
-          return $msg;
-      }
-
-
-
+    //  __construct Method
+    public function __construct()
+    {
+        $this->db = new Database();
+        $this->validate = new Validator($this->db);
     }
 
-  }
+    // Select All User Method
+    public function index()
+    {
 
+        try {
+            $itemsPerPage = 10;
+            $page = isset($_GET['page']) ? $_GET['page'] : 1;
+            $offset = ($page - 1) * $itemsPerPage;
 
-  // Select All User Method
-  public function selectAllUserData(){
-    $sql = "SELECT * FROM users ORDER BY id DESC";
-    $stmt = $this->db->pdo->prepare($sql);
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_OBJ);
-  }
+            $sql = "SELECT * FROM users ORDER BY id DESC LIMIT $offset, $itemsPerPage";
+            $stmt = $this->db->pdo->prepare($sql);
+            $stmt->execute();
 
+            // Count total number of rows
+            $totalRows = $stmt->rowCount();
+            // Calculate total number of pages
+            $totalPages = ceil($totalRows / $itemsPerPage);
 
-
-
-    // Get Single User Information By Id Method
-    public function getUserInfoById($userid){
-      $sql = "SELECT * FROM users WHERE id = :id LIMIT 1";
-      $stmt = $this->db->pdo->prepare($sql);
-      $stmt->bindValue(':id', $userid);
-      $stmt->execute();
-      $result = $stmt->fetch(PDO::FETCH_OBJ);
-      if ($result) {
-        return $result;
-      }else{
-        return false;
-      }
+            return [
+                'message' => 'Data loaded',
+                'data' => $stmt->fetchAll(PDO::FETCH_OBJ),
+                'pagination' => [
+                    'totalPages' => $totalPages,
+                ],
+            ];
+        } catch (Throwable $e) {
+            // Handle the error or exception
+            return [
+                'message' => $e->getMessage(),
+            ];
+        }
     }
 
+    // User Registration Method
+    public function store($data)
+    {
+        try {
+            if (!$this->validate->isValidUser($data) || $this->validate->checkExistEmail($data['email'])) {
+                return ['message' => $this->validate->getMessage(),
+                    'old_data' => $data,
+                ];
+            }
 
+            $data = $this->validate->getTrimmedData();
 
-  //
-  //   Get Single User Information By Id Method
-    public function updateUserByIdInfo($userid, $data){
-      $username = $data['username'];
-      $email = $data['email'];
-      $role = $data['role'];
+            $sql = "INSERT INTO users( username, email, password, role) VALUES(:username, :email, :password, :role)";
+            $stmt = $this->db->pdo->prepare($sql);
+            $stmt->bindValue(':username', $data['username']);
+            $stmt->bindValue(':email', $data['email']);
+            $stmt->bindValue(':password', $this->hashPassword($data['password']));
+            $stmt->bindValue(':role', $data['role']);
+            $result = $stmt->execute();
 
+            if ($result) {
+                return ['message' => $this->validate->getSuccessAlert("You have successfully added a new user")];
+            } else {
+                return ['message' => $this->validate->getErrorAlert()];
+            }
+        } catch (Throwable $e) {
+            // Handle the error or exception
+            return [
+                'message' => $e->getMessage(),
+            ];
+        }
+    }
 
+    //   Get Single User Information By Id Method
+    public function update($userid, $data)
+    {
 
-      if ($username == ""|| $email == "") {
-        $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
-  <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-  <strong>Error !</strong> Input Fields must not be Empty !</div>';
-          return $msg;
-        }elseif (strlen($username) < 3) {
-          $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
-    <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-    <strong>Error !</strong> Username is too short, at least 3 Characters !</div>';
-            return $msg;
-        }elseif (filter_var($email, FILTER_VALIDATE_EMAIL === FALSE)) {
-        $msg = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
-  <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-  <strong>Error !</strong> Invalid email address !</div>';
-          return $msg;
-      }else{
+        try {
+            if (!$this->validate->isValidUser($data) || $this->validate->checkExistEmailToOthers($data['email'], $userid)) {
+                return ['message' => $this->validate->getMessage(),
+                    'old_data' => $data,
+                ];
+            }
+            $data = $this->validate->getTrimmedData();
 
-        $sql = "UPDATE users SET username = :username, email = :email, role = :role WHERE id = :id";
-          $stmt= $this->db->pdo->prepare($sql);
-          $stmt->bindValue(':username', $username);
-          $stmt->bindValue(':email', $email);
-          $stmt->bindValue(':role', $role);
-          $stmt->bindValue(':id', $userid);
-        $result =   $stmt->execute();
+            $new_password = $data['new_password'];
+            $password = $data['password'];
 
-        if ($result) {
-          echo "<script>location.href='index.php';</script>";
-          Session::set('msg', '<div class="alert alert-success alert-dismissible mt-3" id="flash-msg">
-          <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-          <strong>Success !</strong> Wow, Your Information updated Successfully !</div>');
+            $sql = "UPDATE users SET username = :username,password= :password, email = :email, role = :role WHERE id = :id";
+            $stmt = $this->db->pdo->prepare($sql);
+            $stmt->bindValue(':username', $data['username']);
+            $stmt->bindValue(':email', $data['email']);
+            $stmt->bindValue(':password', $this->hashPassword($new_password === '' ? $password : $new_password));
+            $stmt->bindValue(':role', $data['role']);
+            $stmt->bindValue(':id', $userid);
+            $result = $stmt->execute();
 
+            if ($result) {
+                echo "<script>location.href='index.php';</script>";
+                Session::set('msg', $this->validate->getSuccessAlert("You have successfully updated user information"));
 
+            } else {
+                echo "<script>location.href='index.php';</script>";
+                Session::set('msg', $this->validate->getErrorAlert());
 
-        }else{
-          echo "<script>location.href='index.php';</script>";
-          Session::set('msg', '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
-    <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-    <strong>Error !</strong> Data not inserted !</div>');
-
-
+            }
+        } catch (Throwable $e) {
+            // Handle the error or exception
+            return [
+                'message' => $e->getMessage(),
+            ];
         }
 
-
-      }
-
-
     }
 
+    // search user by email and password
+    public function search($keyword)
+    {
 
+        try {
+            $itemsPerPage = 10;
+            $page = isset($_GET['page']) ? $_GET['page'] : 1;
+            $offset = ($page - 1) * $itemsPerPage;
+            $stmt = $this->db->pdo->prepare("SELECT id, username, email, role FROM users WHERE username LIKE ? OR email LIKE ? LIMIT $offset, $itemsPerPage");
+            $stmt->execute(["%$keyword%", "%$keyword%"]);
 
-    function hashPassword($password) {
-    return password_hash($password, PASSWORD_DEFAULT);
+            // Count total number of rows
+            $totalRows = $stmt->rowCount();
+            // Calculate total number of pages
+            $totalPages = ceil($totalRows / $itemsPerPage);
+
+            return [
+                'message' => 'Data loaded',
+                'data' => $stmt->fetchAll(PDO::FETCH_OBJ),
+                'pagination' => [
+                    'totalPages' => $totalPages,
+                ],
+            ];
+        } catch (Throwable $e) {
+            // Handle the error or exception
+            return [
+                'message' => $e->getMessage(),
+            ];
+        }
     }
 
+    // Get Single User Information By Id
+    public function get($userid)
+    {
 
+        try {
+            $sql = "SELECT * FROM users WHERE id = :id LIMIT 1";
+            $stmt = $this->db->pdo->prepare($sql);
+            $stmt->bindValue(':id', $userid);
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_OBJ);
+            if ($result) {
+                return $result;
+            } else {
+                return false;
+            }
+        } catch (Throwable $e) {
+            // Handle the error or exception
+            return [
+                'message' => $e->getMessage(),
+            ];
+        }
+    }
 
+    public function hashPassword($password)
+    {
+        return password_hash($password, PASSWORD_DEFAULT);
+    }
+
+    // Delete User by Id Method
+    public function delete($id)
+    {
+        try {
+            $sql = "DELETE FROM users WHERE id = :id ";
+            $stmt = $this->db->pdo->prepare($sql);
+            $stmt->bindValue(':id', $id);
+            $result = $stmt->execute();
+            if ($result) {
+                return $this->validate->getSuccessAlert('Successfully deleted user!');
+            } else {
+                return $this->validate->getErrorAlert();
+            }
+        } catch (Throwable $e) {
+            // Handle the error or exception
+            return [
+                'message' => $e->getMessage(),
+            ];
+        }
+    }
 
 }
