@@ -9,13 +9,25 @@ class AuthController
     private $db;
     private $validate;
 
+    /**
+     * __construct
+     *
+     * @return void
+     */
     public function __construct()
     {
         $this->db = new Database();
         $this->validate = new Validator($this->db);
     }
 
-    public function login($data)
+
+    /**
+     * login
+     *
+     * @param  mixed $data
+     * @return array
+     */
+    public function login($data): array
     {
 
         try {
@@ -24,23 +36,23 @@ class AuthController
 
             if ($this->validate->isEmpty([$email, $password])) {
                 $this->validate->setErrorAlert('Email or password cannot be empty !');
-                return $this->validate->getMessage();
+                return ['message' => $this->validate->getMessage()];
             }
 
             if (!$this->validate->isValidEmail($email)) {
-                return $this->validate->getMessage();
+                return ['message' => $this->validate->getMessage()];
             }
 
             if (!$this->validate->checkExistEmail($email)) {
                 $this->validate->setErrorAlert('Email did not Found, use Register email or password please !');
-                return $this->validate->getMessage();
+                return ['message' => $this->validate->getMessage()];
             } else {
 
                 $logResult = $this->checkCredentials($email, $password);
 
-                if (isset($logResult['error'])) {
-                    throw new Exception("Something went wrong!");
-                }
+                // if (isset($logResult['error'])) {
+                //     throw new Exception("Something went wrong!");
+                // }
 
                 if ($logResult) {
 
@@ -52,23 +64,29 @@ class AuthController
                     Session::set('username', $logResult->username);
                     Session::set('logMsg', $this->validate->getSuccessAlert('You are Logged In Successfully !'));
                     echo "<script>location.href='index.php';</script>";
-
                 } else {
                     $this->validate->setErrorAlert('Email or Password did not Matched !');
-                    return $this->validate->getMessage();
+                    return ['message' => $this->validate->getMessage()];
                 }
-
             }
         } catch (Throwable $e) {
             // Handle the error or exception
+
             return [
-                'message' => $e->getMessage(),
+                'message' => $this->validate->getErrorAlert(),
             ];
         }
-
     }
 
-    public function checkCredentials($email, $password)
+    // Checks email and password    
+    /**
+     * checkCredentials
+     *
+     * @param  string $email
+     * @param  string $password
+     * @return mixed
+     */
+    public function checkCredentials($email, $password): mixed
     {
         try {
             $sql = "SELECT * FROM users WHERE email = :email LIMIT 1";
@@ -81,14 +99,21 @@ class AuthController
         } catch (Throwable $e) {
             // Handle the error or exception
             return [
-                'error' => $e->getMessage(),
+                'error' =>
+                $this->validate->getErrorAlert(),
             ];
         }
     }
 
-    public function verifyPassword($password, $hash)
+    /**
+     * verifyPassword
+     *
+     * @param  string $password
+     * @param  string $hash
+     * @return bool
+     */
+    public function verifyPassword($password, $hash): bool
     {
         return password_verify($password, $hash);
     }
-
 }

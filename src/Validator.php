@@ -6,11 +6,23 @@ class Validator
     private $message;
     private $trimmedData = [];
 
+    /**
+     * __construct
+     *
+     * @param  mixed $db
+     * @return void
+     */
     public function __construct(private $db)
     {
     }
 
-    public function isValidUser($data)
+    /**
+     * isValidUser
+     *
+     * @param  mixed $data
+     * @return bool
+     */
+    public function isValidUser($data): bool
     {
         foreach ($data as $key => $value) {
             $this->trimmedData[$key] = ($key === 'password' || $key === 'new_password') ? $value : trim($value);
@@ -23,7 +35,8 @@ class Validator
         if ($this->isEmpty([$username, $email, $password, $role])) {
             $this->setErrorAlert('Please, User Registration field must not be Empty !');
             return false;
-        } elseif (!$this->isValieUsername($username)
+        } elseif (
+            !$this->isValieUsername($username)
             || !$this->isValidPasswrod($password)
             || !$this->isValidEmail($email)
         ) {
@@ -33,7 +46,13 @@ class Validator
         return true;
     }
 
-    public function checkExistEmail($email)
+    /**
+     * checkExistEmail
+     *
+     * @param  mixed $email
+     * @return bool
+     */
+    public function checkExistEmail($email): bool
     {
         $sql = "SELECT email from  users WHERE email = ?";
         $stmt = $this->db->pdo->prepare($sql);
@@ -46,7 +65,14 @@ class Validator
         }
     }
 
-    public function checkExistEmailToOthers($email, $userId)
+    /**
+     * checkExistEmailToOthers
+     *
+     * @param  mixed $email
+     * @param  mixed $userId
+     * @return bool
+     */
+    public function checkExistEmailToOthers($email, $userId): bool
     {
         $sql = "SELECT email from  users WHERE email = ? AND id != ? ";
         $stmt = $this->db->pdo->prepare($sql);
@@ -59,7 +85,13 @@ class Validator
         }
     }
 
-    public function isEmpty($fields)
+    /**
+     * isEmpty
+     *
+     * @param  mixed $fields
+     * @return bool
+     */
+    public function isEmpty($fields): bool
     {
         foreach ($fields as $field) {
             if ($field == "") {
@@ -69,7 +101,13 @@ class Validator
         return false;
     }
 
-    public function isValieUsername($username)
+    /**
+     * isValieUsername
+     *
+     * @param  mixed $username
+     * @return bool
+     */
+    public function isValieUsername($username): bool
     {
         if (strlen($username) < 3) {
             $this->setErrorAlert('Username is too short, at least 3 Characters !');
@@ -78,7 +116,13 @@ class Validator
         return true;
     }
 
-    public function isValidEmail($email)
+    /**
+     * isValidEmail
+     *
+     * @param  mixed $email
+     * @return bool
+     */
+    public function isValidEmail($email): bool
     {
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -89,7 +133,13 @@ class Validator
         return true;
     }
 
-    public function isValidPasswrod($password)
+    /**
+     * isValidPasswrod
+     *
+     * @param  mixed $password
+     * @return bool
+     */
+    public function isValidPasswrod($password): bool
     {
 
         if (!preg_match("#[0-9]+#", $password)) {
@@ -106,34 +156,61 @@ class Validator
         return true;
     }
 
-    public function setErrorAlert($message)
+    /**
+     * setErrorAlert
+     *
+     * @param  mixed $message
+     * @return void
+     */
+    public function setErrorAlert($message): void
     {
         $this->message = '<div class="alert alert-danger alert-dismissible mt-3" id="flash-msg">
         <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a><strong>Error !</strong>
         ' . $message . '</div>';
     }
 
-    public function getSuccessAlert($message)
+    /**
+     * getSuccessAlert
+     *
+     * @param  mixed $message
+     * @return string
+     */
+    public function getSuccessAlert($message): string
     {
         return '<div class="alert alert-success alert-dismissible mt-3" id="flash-msg">
             <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
             <strong>Success !</strong> ' . $message . ' !</div>';
     }
 
-    public function getErrorAlert()
+    /**
+     * getErrorAlert
+     *
+     * @return string
+     */
+    public function getErrorAlert(): string
     {
         $this->setErrorAlert('Something went wrong !');
         return $this->getMessage();
     }
 
-    public function getMessage()
+    /**
+     * getMessage
+     *
+     * @return string
+     */
+    public function getMessage(): string
     {
         return $this->message;
     }
 
-    public function getTrimmedData()
+
+    /**
+     * getTrimmedData
+     *
+     * @return array
+     */
+    public function getTrimmedData(): array
     {
         return $this->trimmedData;
     }
-
 }

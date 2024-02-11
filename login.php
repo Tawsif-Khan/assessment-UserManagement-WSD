@@ -1,40 +1,35 @@
 <?php
 $filepath = realpath(dirname(__FILE__));
-include_once $filepath."/lib/Session.php";
+include_once $filepath . "/lib/Session.php";
 Session::init();
-spl_autoload_register(function($classes){
+spl_autoload_register(function ($classes) {
 
-  include 'src/'.$classes.".php";
-
+    include 'src/' . $classes . ".php";
 });
 
 
 $auth = new AuthController();
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
-    
-  $response = $auth->login($_POST);
-  if (isset($response)) {
-  echo $response;
-}
-}
 
+    $response = $auth->login($_POST);
+    if (isset($response['message'])) {
+        echo $response['message'];
+    }
+}
 
 $logout = Session::get('logout');
 if (isset($logout)) {
-  echo $logout;
+    echo $logout;
 }
-Session::CheckLogin();
+Session::checkLogin();
 
 
-
-
-
-
- ?>
+?>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -42,6 +37,7 @@ Session::CheckLogin();
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
+
 <body>
     <div class="container mt-5">
         <div class="row justify-content-center">
@@ -58,7 +54,7 @@ Session::CheckLogin();
                             </div>
                             <div class="form-group">
                                 <label for="password">Password</label>
-                                <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required>
+                                <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password">
                             </div>
                             <button type="submit" class="btn btn-primary btn-block" name="login">Login</button>
                         </form>
@@ -73,4 +69,5 @@ Session::CheckLogin();
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@1.16.1/dist/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
+
 </html>

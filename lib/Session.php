@@ -5,8 +5,13 @@
 class Session
 {
 
-    // Session Start Method
-    public static function init()
+    // Session Start Method    
+    /**
+     * init
+     *
+     * @return void
+     */
+    public static function init(): void
     {
 
         if (session_status() == PHP_SESSION_NONE) {
@@ -14,15 +19,28 @@ class Session
         }
     }
 
-    // Session Set Method
-    public static function set($key, $val)
+    // Session Set Method    
+    /**
+     * set
+     *
+     * @param  string $key
+     * @param  mixed $val
+     * @return void
+     */
+    public static function set($key, $val): void
     {
 
         $_SESSION[$key] = $val;
     }
 
-    // Session Get Method
-    public static function get($key)
+    // Session Get Method    
+    /**
+     * get
+     *
+     * @param  string $key
+     * @return mixed
+     */
+    public static function get($key): mixed
     {
         if (isset($_SESSION[$key])) {
             return $_SESSION[$key];
@@ -31,16 +49,26 @@ class Session
         }
     }
 
-    // User logout Method
-    public static function destroy()
+    // User logout Method    
+    /**
+     * destroy
+     *
+     * @return void
+     */
+    public static function destroy(): void
     {
         session_destroy();
         session_unset();
         header('Location:login.php');
     }
 
-    // Check Session Method
-    public static function CheckSession()
+    // Check Session Method    
+    /**
+     * checkSession
+     *
+     * @return void
+     */
+    public static function checkSession(): void
     {
         if (self::get('login') == false) {
             session_destroy();
@@ -48,12 +76,16 @@ class Session
         }
     }
 
-    // Check Login Method
-    public static function CheckLogin()
+    // Check Login Method    
+    /**
+     * checkLogin
+     *
+     * @return void
+     */
+    public static function checkLogin(): void
     {
         if (self::get("login") == true) {
             header('Location:index.php');
         }
     }
-
 }

@@ -9,53 +9,66 @@ class UserController
     //  Property
     private $db;
     private $validate;
+    private $itemsPerPage = 5;
 
-    //  __construct Method
+    //  __construct Method    
+    /**
+     * __construct
+     *
+     * @return void
+     */
     public function __construct()
     {
         $this->db = new Database();
         $this->validate = new Validator($this->db);
     }
 
-    // Select All User Method
-    public function index()
+    // Select All User Method    
+
+    /**
+     * index
+     *
+     * @return array
+     */
+    public function index(): array
     {
 
         try {
-            $itemsPerPage = 10;
             $page = isset($_GET['page']) ? $_GET['page'] : 1;
-            $offset = ($page - 1) * $itemsPerPage;
+            $offset = ($page - 1) * $this->itemsPerPage;
 
-            $sql = "SELECT * FROM users ORDER BY id DESC LIMIT $offset, $itemsPerPage";
+            $sql = "SELECT * FROM users ORDER BY id DESC LIMIT $offset, $this->itemsPerPage";
             $stmt = $this->db->pdo->prepare($sql);
             $stmt->execute();
-
-            // Count total number of rows
-            $totalRows = $stmt->rowCount();
-            // Calculate total number of pages
-            $totalPages = ceil($totalRows / $itemsPerPage);
 
             return [
                 'message' => 'Data loaded',
                 'data' => $stmt->fetchAll(PDO::FETCH_OBJ),
-                'pagination' => [
-                    'totalPages' => $totalPages,
-                ],
+                'pagination' =>
+                $this->paginate($page),
             ];
         } catch (Throwable $e) {
             // Handle the error or exception
             return [
-                'message' => $e->getMessage(),
+                'message' =>
+                $this->validate->getErrorAlert(),
             ];
         }
     }
 
-    // User Registration Method
-    public function store($data)
+    // User Registration Method    
+    /**
+     * store
+     *
+     * @param  mixed $data
+     * @return void
+     */
+    public function store($data): array
     {
         try {
             if (!$this->validate->isValidUser($data) || $this->validate->checkExistEmail($data['email'])) {
-                return ['message' => $this->validate->getMessage(),
+                return [
+                    'message' => $this->validate->getMessage(),
                     'old_data' => $data,
                 ];
             }
@@ -78,18 +91,27 @@ class UserController
         } catch (Throwable $e) {
             // Handle the error or exception
             return [
-                'message' => $e->getMessage(),
+                'message' =>
+                $this->validate->getErrorAlert(),
             ];
         }
     }
 
-    //   Get Single User Information By Id Method
-    public function update($userid, $data)
+    //   Get Single User Information By Id Method    
+    /**
+     * update
+     *
+     * @param  int $userid
+     * @param  mixed $data
+     * @return mixed
+     */
+    public function update($userid, $data): mixed
     {
 
         try {
             if (!$this->validate->isValidUser($data) || $this->validate->checkExistEmailToOthers($data['email'], $userid)) {
-                return ['message' => $this->validate->getMessage(),
+                return [
+                    'message' => $this->validate->getMessage(),
                     'old_data' => $data,
                 ];
             }
@@ -110,53 +132,55 @@ class UserController
             if ($result) {
                 echo "<script>location.href='index.php';</script>";
                 Session::set('msg', $this->validate->getSuccessAlert("You have successfully updated user information"));
-
             } else {
                 echo "<script>location.href='index.php';</script>";
                 Session::set('msg', $this->validate->getErrorAlert());
-
             }
         } catch (Throwable $e) {
             // Handle the error or exception
             return [
-                'message' => $e->getMessage(),
+                'message' =>
+                $this->validate->getErrorAlert(),
             ];
         }
-
     }
 
-    // search user by email and password
-    public function search($keyword)
+    // search user by email and password    
+    /**
+     * search
+     *
+     * @param  string $keyword
+     * @return void
+     */
+    public function search($keyword): array
     {
 
         try {
-            $itemsPerPage = 10;
             $page = isset($_GET['page']) ? $_GET['page'] : 1;
-            $offset = ($page - 1) * $itemsPerPage;
-            $stmt = $this->db->pdo->prepare("SELECT id, username, email, role FROM users WHERE username LIKE ? OR email LIKE ? LIMIT $offset, $itemsPerPage");
+            $offset = ($page - 1) * $this->itemsPerPage;
+            $stmt = $this->db->pdo->prepare("SELECT id, username, email, role FROM users WHERE username LIKE ? OR email LIKE ? LIMIT $offset, $this->itemsPerPage");
             $stmt->execute(["%$keyword%", "%$keyword%"]);
-
-            // Count total number of rows
-            $totalRows = $stmt->rowCount();
-            // Calculate total number of pages
-            $totalPages = ceil($totalRows / $itemsPerPage);
 
             return [
                 'message' => 'Data loaded',
                 'data' => $stmt->fetchAll(PDO::FETCH_OBJ),
-                'pagination' => [
-                    'totalPages' => $totalPages,
-                ],
+                'pagination' => $this->paginate($page),
             ];
         } catch (Throwable $e) {
             // Handle the error or exception
             return [
-                'message' => $e->getMessage(),
+                'message' =>
+                $this->validate->getErrorAlert(),
             ];
         }
     }
 
-    // Get Single User Information By Id
+    // Get Single User Information By Id    
+    /**
+     * get
+     *
+     * @param  mixed $userid
+     */
     public function get($userid)
     {
 
@@ -174,7 +198,8 @@ class UserController
         } catch (Throwable $e) {
             // Handle the error or exception
             return [
-                'message' => $e->getMessage(),
+                'message' =>
+                $this->validate->getErrorAlert(),
             ];
         }
     }
@@ -184,8 +209,14 @@ class UserController
         return password_hash($password, PASSWORD_DEFAULT);
     }
 
-    // Delete User by Id Method
-    public function delete($id)
+    // Delete User by Id Method    
+    /**
+     * delete
+     *
+     * @param  mixed $id
+     * @return array
+     */
+    public function delete($id): array
     {
         try {
             $sql = "DELETE FROM users WHERE id = :id ";
@@ -193,16 +224,34 @@ class UserController
             $stmt->bindValue(':id', $id);
             $result = $stmt->execute();
             if ($result) {
-                return $this->validate->getSuccessAlert('Successfully deleted user!');
+                return ['message' => $this->validate->getSuccessAlert('Successfully deleted user!')];
             } else {
-                return $this->validate->getErrorAlert();
+                return ['message' => $this->validate->getErrorAlert()];
             }
         } catch (Throwable $e) {
             // Handle the error or exception
             return [
-                'message' => $e->getMessage(),
+                'message' =>
+                $this->validate->getErrorAlert(),
             ];
         }
     }
 
+    public function paginate($page)
+    {
+        // Query to count total number of rows
+        $sqlCount = "SELECT COUNT(*) AS total FROM users";
+        $resultCount = $this->db->pdo->prepare($sqlCount);
+        $resultCount->execute();
+        $rowCount = $resultCount->fetch();
+        $totalRows = $rowCount['total'];
+
+        // Calculate total number of pages
+        $totalPages = ceil($totalRows / $this->itemsPerPage);
+
+        return [
+            'totalPages' => $totalPages,
+            'page' => $page
+        ];
+    }
 }

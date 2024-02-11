@@ -9,7 +9,12 @@ class Database
 
     public $pdo;
 
-    // Construct Class
+    // Construct Class    
+    /**
+     * __construct
+     *
+     * @return void
+     */
     public function __construct()
     {
 
