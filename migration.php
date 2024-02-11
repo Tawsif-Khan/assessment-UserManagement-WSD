@@ -1,4 +1,5 @@
 <?php
+include_once './lib/Session.php';
 include './lib/Database.php';
 
 // Define SQL for creating the users table
@@ -15,11 +16,15 @@ $password = password_hash('password', PASSWORD_DEFAULT);
 $insert = "INSERT INTO users (username, email, password, role) VALUES ('Admin', 'admin@admin.com', '$password', 'admin')";
 // Execute SQL to create the users table
 try {
+    Session::init();
     $db = new Database();
     $db->pdo->exec($sql);
     $db->pdo->exec($insert);
-    echo "Users table created successfully\n";
-    echo "Admin created successfully\n";
+
+    Session::set('migration', true);
+    header('location:login.php');
 } catch (PDOException $e) {
+    Session::set('migration', true);
+    header('location:login.php');
     die("Error creating users table: " . $e->getMessage());
 }

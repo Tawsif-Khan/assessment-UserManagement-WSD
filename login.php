@@ -24,7 +24,10 @@ if (isset($logout)) {
 }
 Session::checkLogin();
 
-
+if (Session::get('migration') === true) {
+    Session::set('migration', false);
+    echo $auth->getValidator()->getSuccessAlert('Database Migration is successfull and an Admin is created');
+}
 ?>
 
 <!DOCTYPE html>
@@ -50,11 +53,11 @@ Session::checkLogin();
                         <form action="" method="POST">
                             <div class="form-group">
                                 <label for="username">Username</label>
-                                <input type="text" id="username" name="email" class="form-control" placeholder="Enter your username" required>
+                                <input type="text" id="username" name="email" class="form-control" value="admin@admin.com" placeholder="Enter your username" required>
                             </div>
                             <div class="form-group">
                                 <label for="password">Password</label>
-                                <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password">
+                                <input type="password" id="password" name="password" class="form-control" value="password" placeholder="Enter your password">
                             </div>
                             <button type="submit" class="btn btn-primary btn-block" name="login">Login</button>
                         </form>

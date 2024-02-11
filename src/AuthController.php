@@ -20,6 +20,15 @@ class AuthController
         $this->validate = new Validator($this->db);
     }
 
+    /**
+     * getValidator
+     *
+     * @return mixed
+     */
+    public function getValidator(): mixed
+    {
+        return $this->validate;
+    }
 
     /**
      * login
@@ -49,10 +58,6 @@ class AuthController
             } else {
 
                 $logResult = $this->checkCredentials($email, $password);
-
-                // if (isset($logResult['error'])) {
-                //     throw new Exception("Something went wrong!");
-                // }
 
                 if ($logResult) {
 
